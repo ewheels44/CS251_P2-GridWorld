@@ -47,6 +47,12 @@ class GridWorld {
 						int ppl_ids_in_district;
 						NodeD* next;
 						NodeD* prev;
+
+						NodeD(int _data, NodeD* _next = nullptr, NodeD *_prev = nullptr){
+							ppl_ids_in_district = _data;	
+							next = _next;
+							prev = _prev;
+						}
 				};
 		// for ppl in district
 		//
@@ -66,6 +72,14 @@ class GridWorld {
 				int row_lives;
 				int col_lives;
 				District::NodeD *backdoorPTR;
+
+				Person(int id, int r, int c, bool _is_alive, District::NodeD *ptr){
+					person_id = id;
+					is_alive = _is_alive;
+					row_lives = r;
+					col_lives = c;
+					backdoorPTR = ptr;
+				}
 		};
 
 		int ROWS;
@@ -98,6 +112,8 @@ class GridWorld {
 		// make ID = to index
 		vector<Person> all_ppl;
 
+		// coutner
+		//
 		int id;
 
   public:
@@ -125,7 +141,44 @@ class GridWorld {
       // your constructor code here!
     }
     ~GridWorld(){
-      // TODO your destructor code here.
+		// TODO your destructor code here.
+		
+		// if linked list for death storage is empty
+		//
+		// remove nodes in linked list (Death storage)
+		//
+		if(this->front != nullptr)
+		{
+			Node *cur = this->front;
+			while (cur != nullptr)
+			{
+				cur = cur->next;
+				delete this->front;
+				this->front = cur;
+			}
+		}
+
+		// remove the doubly linked list of members 
+		// in each district
+		//
+		for(auto &r : this->districts)
+		{
+			for(auto &c : r )
+			{
+				if(c.front_D != nullptr) 
+				{
+					District::NodeD *cur = c.front_D;
+					while (cur)
+					{
+						cur = cur->next;
+						delete c.front_D;
+						c.front_D = cur;
+					}
+				}
+
+			}
+		}
+
     }
 
 	//
@@ -159,9 +212,7 @@ class GridWorld {
 	//
 	District::NodeD *push_back_D(District *_thisDist, int data)
 	{
-		District::NodeD *newN = new District::NodeD;
-		newN->ppl_ids_in_district = data;
-		newN->next = nullptr;
+		District::NodeD *newN = new District::NodeD(data);
 		if(_thisDist->front_D == nullptr)
 		{
 			newN->prev = nullptr;
@@ -188,8 +239,9 @@ class GridWorld {
 
 		if(does_district_exist(row, col))
 		{
-			Person *newP = new Person();
+			Person *newP = new Person(0, row, col, true, nullptr);
 			if(this->front == nullptr) 						// if there is no one dead, there are no ids that need to be reused yet
+				/* newP->person_id = this->id++; */
 				newP->person_id = this->id++;
 			else{ 											// there is someone dead then the next id to be givin out is the front of the list(most old)
 				newP->person_id = this->front->data.dead_id;
@@ -197,24 +249,21 @@ class GridWorld {
 				this->front = cur->next;
 				delete cur;
 			} 											
-
-			newP->is_alive = true;
 			id = newP->person_id;
-
-			newP->row_lives = row;
-			newP->col_lives = col;
-
+			// they get added to their district
+			//
 			newP->backdoorPTR = push_back_D(&this->districts[row][col], id);
 
+			// they get added to all ppl vec
+			//
 			this->all_ppl.insert(all_ppl.begin() + id, *newP);
 
 			this->districts[row][col].num_ppl_in_district++;
 
 			this->total_population++;
 
-			// dont know if I need this or the one above
-			//
-			/* this->ppl_alive.insert(ppl_alive.begin(), newP->person_id); */
+			delete newP;  // delete here, locally used?
+
 			return true;
 		}
 
@@ -272,6 +321,7 @@ class GridWorld {
 		if(delme->prev != nullptr)
 		{
 			delme->prev->next = delme->next;
+			_thisDist->Tail_D = delme->prev;
 		}
 
 		delete delme;
@@ -297,9 +347,12 @@ class GridWorld {
 
 				// they be dead now
 				//
-				requested_person.is_alive = false;
-				requested_person.row_lives = 0;
-				requested_person.col_lives = 0;
+				/* requested_person.is_alive = false; */
+				/* requested_person.row_lives = -1; */
+				/* requested_person.col_lives = -1; */
+				this->all_ppl[personID].is_alive = false;
+				this->all_ppl[personID].row_lives = -1;
+				this->all_ppl[personID].col_lives = -1;
 				this->total_population--;
 				push_back(personID);	
 				return true;
@@ -350,22 +403,26 @@ class GridWorld {
 			if( requested_person.is_alive )
 			{
 
+				// just need to replace seniority
+				// could improve by just manipulating the pointers...
+				//
+				deleteD_Node(&this->districts[requested_person.row_lives][requested_person.col_lives], requested_person.backdoorPTR);
+				this->all_ppl[id].backdoorPTR = push_back_D(&this->districts[targetRow][targetCol], id);
+
 				// if they get moved to a different district
 				//
 				if(requested_person.row_lives != targetRow || requested_person.col_lives != targetCol){
-					std::cout << "need to delete prev home district" << std::endl;
-					deleteD_Node(&this->districts[requested_person.row_lives][requested_person.col_lives], requested_person.backdoorPTR);
-					requested_person.row_lives = targetRow;
-					requested_person.col_lives = targetCol; 
-					requested_person.backdoorPTR = push_back_D(&this->districts[targetRow][targetCol], id);
-				}
-				else
-				{
-					// just need to replace seniority
-					// could improve by just manipulating the pointers...
+					this->districts[requested_person.row_lives][requested_person.col_lives].num_ppl_in_district--;
+					// why doesnt this update the values correctly???
 					//
-					deleteD_Node(&this->districts[requested_person.row_lives][requested_person.col_lives], requested_person.backdoorPTR);
-					requested_person.backdoorPTR = push_back_D(&this->districts[targetRow][targetCol], id);
+					/* requested_person.row_lives = targetRow; */
+					/* requested_person.col_lives = targetCol;  */
+					//
+					//
+
+					this->all_ppl[id].row_lives = targetRow;
+					this->all_ppl[id].col_lives = targetCol;
+					this->districts[targetRow][targetCol].num_ppl_in_district++;
 				}
 
 				return true;
