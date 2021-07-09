@@ -193,7 +193,7 @@ class GridWorld {
 	//
 	bool does_district_exist(int row, int col) const{
 
-		if(row < this->ROWS && col < this->COLS)
+		if((row < this->ROWS && col < this->COLS) && (row >= 0 && col >=0)) 
 			return true;
 		return false;
 	}
