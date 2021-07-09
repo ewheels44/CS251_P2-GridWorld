@@ -92,8 +92,6 @@ class GridWorld {
 	    Node *front; 
 		Node *Tail;  
 
-	    // need getters 
-	    // 
 	    int total_population;
 	    int num_ppl_dead; 		
 
@@ -237,22 +235,34 @@ class GridWorld {
 		{
 			Person *newP = new Person(0, row, col, true, nullptr);
 			if(this->front == nullptr) 						// if there is no one dead, there are no ids that need to be reused yet
+			{
 				/* newP->person_id = this->id++; */
 				newP->person_id = this->id++;
+				// they get added to all ppl vec
+				//
+				this->all_ppl.push_back(*newP);
+
+			}
 			else{ 											// there is someone dead then the next id to be givin out is the front of the list(most old)
+				// future development:
+				// make this a helper func 
+				// ie pop_front
+				//
 				newP->person_id = this->front->data.dead_id;
 				Node *cur = this->front;
 				this->front = cur->next;
 				delete cur;
+
+				// call fourth lazarus from his cave
+				//
+				this->all_ppl[newP->person_id].is_alive = true;
+				this->all_ppl[newP->person_id].row_lives = row;
+				this->all_ppl[newP->person_id].col_lives = col;
 			} 											
 			id = newP->person_id;
 			// they get added to their district
 			//
 			newP->backdoorPTR = push_back_D(&this->districts[row][col], id);
-
-			// they get added to all ppl vec
-			//
-			this->all_ppl.insert(all_ppl.begin() + id, *newP);
 
 			this->districts[row][col].num_ppl_in_district++;
 
@@ -349,6 +359,7 @@ class GridWorld {
 				this->all_ppl[personID].is_alive = false;
 				this->all_ppl[personID].row_lives = -1;
 				this->all_ppl[personID].col_lives = -1;
+				this->all_ppl[personID].backdoorPTR = nullptr;
 				this->total_population--;
 				push_back(personID);	
 				return true;
