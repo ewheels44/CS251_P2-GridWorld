@@ -236,12 +236,11 @@ class GridWorld {
 			Person *newP = new Person(0, row, col, true, nullptr);
 			if(this->front == nullptr) 						// if there is no one dead, there are no ids that need to be reused yet
 			{
-				/* newP->person_id = this->id++; */
 				newP->person_id = this->id++;
 				// they get added to all ppl vec
 				//
+				newP->backdoorPTR = push_back_D(&this->districts[row][col], newP->person_id);
 				this->all_ppl.push_back(*newP);
-
 			}
 			else{ 											// there is someone dead then the next id to be givin out is the front of the list(most old)
 				// future development:
@@ -258,11 +257,12 @@ class GridWorld {
 				this->all_ppl[newP->person_id].is_alive = true;
 				this->all_ppl[newP->person_id].row_lives = row;
 				this->all_ppl[newP->person_id].col_lives = col;
+				this->all_ppl[newP->person_id].backdoorPTR = push_back_D(&this->districts[row][col], newP->person_id);
 			} 											
 			id = newP->person_id;
 			// they get added to their district
 			//
-			newP->backdoorPTR = push_back_D(&this->districts[row][col], id);
+			/* newP->backdoorPTR = push_back_D(&this->districts[row][col], newP->person_id); */
 
 			this->districts[row][col].num_ppl_in_district++;
 
