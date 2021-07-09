@@ -54,10 +54,6 @@ class GridWorld {
 							prev = _prev;
 						}
 				};
-		// for ppl in district
-		//
-		/* District::NodeD *front_D; */
-		/* District::NodeD *Tail_D; */
 				NodeD *front_D;
 				NodeD *Tail_D;
 
@@ -337,7 +333,7 @@ class GridWorld {
      */
     bool death(int personID){
 
-		if(personID <= this->all_ppl.size()){
+		if(personID < this->all_ppl.size()){
 			Person requested_person = this->all_ppl[personID];
 			if(requested_person.is_alive ){
 
